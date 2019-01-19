@@ -1,4 +1,4 @@
-A disassembly of Sonic the Hedgehog 2 for the Sega Mega Drive/Genesis.
+A disassembly of Sonic the Hedgehog 2 for the Sega Mega Drive/Genesis with enhanced sound driver by MainMemory, Clownacy, and ValleyBell.
 
 To build this, use build.bat if you're a Windows user, or build.sh otherwise. The built ROM will be called s2built.bin.
 

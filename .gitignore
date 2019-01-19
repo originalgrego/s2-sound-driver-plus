@@ -9,3 +9,10 @@ s2.map
 s2built.bin
 s2built.prev.bin
 bin/
+build_source/**/obj/
+build_source/**/bin/
+*.csproj.user
+*.suo
+*_cmp.bin
+*.gen.asm
+.vs/

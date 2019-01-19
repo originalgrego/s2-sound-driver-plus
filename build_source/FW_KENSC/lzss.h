@@ -1,6 +1,6 @@
 /* -*- Mode: C++; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
 /*
- * Copyright (C) Flamewing 2013 <flamewing.sonic@gmail.com>
+ * Copyright (C) Flamewing 2013-2015 <flamewing.sonic@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published
@@ -46,30 +46,33 @@ private:
 	size_t length;
 public:
 	// Constructors.
-	AdjListNode()
+	AdjListNode() noexcept
 		: destnode(1), weight(std::numeric_limits<size_t>::max()), distance(1),
 		  length(1) {
 	}
-	AdjListNode(size_t dest, size_t dist, size_t len,
-	            size_t wgt)
+	AdjListNode(size_t dest, size_t dist, size_t len, size_t wgt) noexcept
 		: destnode(dest), weight(wgt), distance(dist), length(len) {
 	}
+	AdjListNode(AdjListNode const &other) noexcept = default;
+	AdjListNode(AdjListNode &&other) noexcept = default;
+	AdjListNode &operator=(AdjListNode const &other) noexcept = default;
+	AdjListNode &operator=(AdjListNode &&other) noexcept = default;
 	// Getters.
-	size_t get_dest() const {
+	size_t get_dest() const noexcept {
 		return destnode;
 	}
-	size_t get_weight() const {
+	size_t get_weight() const noexcept {
 		return weight;
 	}
-	size_t get_distance() const {
+	size_t get_distance() const noexcept {
 		return distance;
 	}
-	size_t get_length() const {
+	size_t get_length() const noexcept {
 		return length;
 	}
 	// Comparison operator. Lowest weight first, on tie, break by shortest
 	// length, on further tie break by distance. Used only on the multimap.
-	bool operator<(AdjListNode const &other) const {
+	bool operator<(AdjListNode const &other) const noexcept {
 		if (weight < other.weight)
 			return true;
 		else if (weight > other.weight)
@@ -92,31 +95,37 @@ public:
  * 	typedef unsigned char  stream_t;
  * 	typedef unsigned short descriptor_t;
  * 	typedef littleendian<descriptor_t> descriptor_endian_t;
- * 	enum {
- * 		// Number of bits on descriptor bitfield.
- * 		NumDescBits = sizeof(descriptor_t) * 8,
- * 		// Number of bits used in descriptor bitfield to signal the end-of-file
- * 		// marker sequence.
- * 		NumTermBits = 2,
- * 		// Flag that tells the compressor that new descriptor fields are needed
- * 		// as soon as the last bit in the previous one is used up.
- * 		NeedEarlyDescriptor = 1,
- * 		// Flag that marks the descriptor bits as being in little-endian bit
- * 		// order (that is, lowest bits come out first).
- * 		DescriptorLittleEndianBits = 1
- * 	};
+ * 	constexpr static size_t NumDescBits = sizeof(descriptor_t) * 8;
+ * 	// Number of bits used in descriptor bitfield to signal the end-of-file
+ * 	// marker sequence.
+ * 	constexpr static size_t NumTermBits = 2;
+ * 	// Flag that tells the compressor that new descriptor fields are needed
+ * 	// as soon as the last bit in the previous one is used up.
+ * 	constexpr static size_t NeedEarlyDescriptor = 1;
+ * 	// Flag that marks the descriptor bits as being in little-endian bit
+ * 	// order (that is, lowest bits come out first).
+ * 	constexpr static size_t DescriptorLittleEndianBits = 1;
+ * 	// Size of the search buffer.
+ * 	constexpr static size_t SearchBufSize = 8192;
+ * 	// Size of the look-ahead buffer.
+ * 	constexpr static size_t LookAheadBufSize = 256;
+ * 	// Total size of the sliding window.
+ * 	constexpr static size_t SlidingWindowSize = SearchBufSize + LookAheadBufSize;
+ * 	// Computes the cost of a symbolwise encoding, that is, the cost of encoding
+ * 	// one single symbol..
+ * 	constexpr static size_t symbolwise_weight() noexcept;
  * 	// Computes the cost of covering all of the "len" vertices starting from
- * 	// "off" vertices ago.
- *  // A return of "std::numeric_limits<size_t>::max()" means "infinite",
- *  // or "no edge".
- * 	static size_t calc_weight(size_t dist, size_t len);
+ * 	// "off" vertices ago, for matches with len > 1.
+ * 	// A return of "std::numeric_limits<size_t>::max()" means "infinite",
+ * 	// or "no edge".
+ * 	static size_t dictionary_weight(size_t dist, size_t len) noexcept;
  * 	// Given an edge, computes how many bits are used in the descriptor field.
- * 	static size_t desc_bits(AdjListNode const &edge);
+ * 	static size_t desc_bits(AdjListNode const &edge) noexcept;
  * 	// Function that finds extra matches in the data that are specific to the
  * 	// given encoder and not general LZSS dictionary matches.
  * 	static void extra_matches(stream_t const *data, size_t basenode,
  * 	                          size_t ubound, size_t lbound,
- * 	                          LZSSGraph<KosinskiAdaptor>::MatchVector &matches);
+ * 	                          LZSSGraph<KosinskiAdaptor>::MatchVector &matches) noexcept;
  * };
  */
 template<typename Adaptor>
@@ -128,10 +137,6 @@ private:
 	// Source file data and its size; one node per character in source file.
 	typename Adaptor::stream_t const *data;
 	size_t const nlen;
-	// Parameters for LZSS encoder: sliding window size and maximum record
-	// length to use when encoding.
-	size_t const SlideWin;
-	size_t const RecLen;
 	// Account for padding at end of file, if any.
 	size_t const Padding;
 	// Adjacency lists for all the nodes in the graph.
@@ -143,34 +148,40 @@ private:
 	 * to reach all possible nodes reachable from the basenode and inserts them
 	 * into a map.
 	 */
-	MatchVector find_matches(size_t basenode) const {
+	MatchVector find_matches(size_t basenode) const noexcept {
+		static_assert(noexcept(Adaptor::symbolwise_weight()),
+		                       "Adaptor::symbolwise_weight() is not noexcept");
+		static_assert(noexcept(Adaptor::dictionary_weight(basenode, basenode)),
+		                       "Adaptor::dictionary_weight() is not noexcept");
 		// Upper and lower bounds for sliding window, starting node.
-		size_t ubound = std::min(RecLen, nlen - basenode),
-		       lbound = basenode > SlideWin ? basenode - SlideWin : 0,
+		size_t ubound = std::min(Adaptor::LookAheadBufSize, nlen - basenode),
+		       lbound = basenode > Adaptor::SearchBufSize ? basenode - Adaptor::SearchBufSize : 0,
 		       ii = basenode - 1;
 		// This is what we produce.
 		MatchVector matches(ubound);
-		// Start with the "literal" match of the current node into the next.
-		size_t wgt = Adaptor::calc_weight(0, 1);
+		// Start with the literal/symbolwise encoding of the current node.
+		size_t wgt = Adaptor::symbolwise_weight();
 		matches[0] = AdjListNode(basenode + 1, 0, 1, wgt);
-		// Get extra matches dependent on specific encoder.
-		Adaptor::extra_matches(data, basenode, ubound, lbound, matches);		
-		// First node is special.		
+		// Get extra dictionary matches dependent on specific encoder.
+		static_assert(noexcept(Adaptor::extra_matches(data, basenode, ubound, lbound, matches)),
+		                       "Adaptor::extra_matches() is not noexcept");
+		Adaptor::extra_matches(data, basenode, ubound, lbound, matches);
+		// First node is special.
 		if (basenode == 0) {
 			return matches;
 		}
 		do {
-			// Keep looking for matches.
+			// Keep looking for dictionary matches.
 			size_t jj = 0;
 			while (data[ii + jj] == data[basenode + jj]) {
 				++jj;
 				// We have found a match that links (basenode) with
 				// (basenode + jj) with length (jj) and distance (basenode-ii).
 				// Add it to the list if it is a better match.
-				size_t wgt = Adaptor::calc_weight(basenode - ii, jj);
+				size_t wgt = Adaptor::dictionary_weight(basenode - ii, jj);
 				AdjListNode &best = matches[jj - 1];
 				if (wgt < best.get_weight()) {
-					best = AdjListNode(basenode + jj, basenode - ii, jj, wgt);
+					best = std::move(AdjListNode(basenode + jj, basenode - ii, jj, wgt));
 				}
 				// We can find no more matches with the current starting node.
 				if (jj >= ubound)
@@ -183,11 +194,9 @@ private:
 public:
 	// Constructor: creates the graph from the input file.
 	LZSSGraph(unsigned char const *dt, size_t const size,
-	          size_t const win, size_t const rec,
-	          size_t const pad)
+	          size_t const pad) noexcept
 		: data(reinterpret_cast<typename Adaptor::stream_t const *>(dt)),
-		  nlen(size / sizeof(typename Adaptor::stream_t)), SlideWin(win),
-		  RecLen(rec), Padding(pad * 8 - 1) {
+		  nlen(size / sizeof(typename Adaptor::stream_t)), Padding(pad * 8 - 1) {
 		// Making space for all nodes.
 		adjs.resize(nlen);
 		for (size_t ii = 0; ii < nlen; ii++) {
@@ -205,7 +214,11 @@ public:
 	/*
 	 * This function returns the shortest path through the file.
 	 */
-	AdjList find_optimal_parse() const {
+	AdjList find_optimal_parse() const noexcept {
+		static_assert(noexcept(Adaptor::desc_bits(AdjListNode())),
+		                       "Adaptor::desc_bits() is not noexcept");
+		static_assert(noexcept(Adaptor::get_padding(0, 0)),
+		                       "Adaptor::get_padding() is not noexcept");
 		// Auxiliary data structures:
 		// * The parent of a node is the node that reaches that node with the
 		//   lowest cost from the start of the file.
@@ -251,7 +264,7 @@ public:
 					if (Adaptor::NeedEarlyDescriptor != 0 || desccost > 0) {
 						wgt += (Adaptor::NumDescBits - desccost);
 					}
-					// Compensate for the Adaptor's padding, if any.
+					// Compensate for the Adaptor's padding, if any. 
 					wgt += Adaptor::get_padding(costs[ii] + wgt, Padding);
 				}
 				// Is the cost to reach the target node through this edge less
@@ -301,10 +314,10 @@ private:
 	std::string buffer;
 public:
 	// Constructor.
-	LZSSOStream(std::ostream &Dst) : out(Dst), bits(out) {
+	LZSSOStream(std::ostream &Dst) noexcept : out(Dst), bits(out) {
 	}
 	// Destructor: writes anything that hasn't been written.
-	~LZSSOStream() {
+	~LZSSOStream() noexcept {
 		// We need a dummy descriptor field if we have exactly zero bits left
 		// on the previous descriptor field; this is because the decoder will
 		// immediately fetch a new descriptor field when the previous one has
@@ -324,7 +337,7 @@ public:
 	}
 	// Writes a bit to the descriptor bitfield. When the descriptor field is
 	// full, outputs it and the output parameter buffer.
-	void descbit(descriptor_t bit) {
+	void descbit(descriptor_t bit) noexcept {
 		if (Adaptor::NeedEarlyDescriptor != 0) {
 			if (bits.push(bit)) {
 				out.write(buffer.c_str(), buffer.size());
@@ -339,7 +352,7 @@ public:
 		}
 	}
 	// Puts a byte in the output buffer.
-	void putbyte(size_t c) {
+	void putbyte(size_t c) noexcept {
 		Write1(buffer, c);
 	}
 };
@@ -364,18 +377,18 @@ private:
 	std::string buffer;
 public:
 	// Constructor.
-	LZSSIStream(std::istream &Src) : in(Src), bits(in) {
+	LZSSIStream(std::istream &Src) noexcept : in(Src), bits(in) {
 	}
 	// Destructor: writes anything that hasn't been written.
-	~LZSSIStream() {
+	~LZSSIStream() noexcept {
 	}
 	// Writes a bit to the descriptor bitfield. When the descriptor field is
 	// full, inputs it and the input parameter buffer.
-	descriptor_t descbit() {
+	descriptor_t descbit() noexcept {
 		return bits.pop();
 	}
 	// Puts a byte in the input buffer.
-	unsigned char getbyte() {
+	unsigned char getbyte() noexcept {
 		return Read1(in);
 	}
 };

@@ -85,7 +85,11 @@ startZ80 macro
     endm
 
 ; function to make a little-endian 16-bit pointer for the Z80 sound driver
+	ifndef kehmusic
 z80_ptr function x,(x)<<8&$FF00|(x)>>8&$7F|$80
+	else
+z80_ptr function x,(x)<<8&$FF00|(x)>>8&$FF
+	endif
 
 ; macro to declare a little-endian 16-bit pointer for the Z80 sound driver
 rom_ptr_z80 macro addr
