@@ -397,7 +397,7 @@ GameClrRAM:
 	dbf	d6,GameClrRAM	; clear RAM ($0000-$FDFF)
 
 	bsr.w	VDPSetupGame
-	jmp	(SoundDriverLoad).l
+	jsr	(SoundDriverLoad).l
 	bsr.w	JoypadInit
 	move.b	#GameModeID_SegaScreen,(Game_Mode).w ; set Game Mode to Sega Screen
 ; loc_394:
@@ -3750,7 +3750,7 @@ SegaSndTblEntry	macro	offset, length, pitch
 	endm
 
 SegaSndTbl:
-	SegaSndTblEntry	Snd_Sega, Snd_Sega_End-Snd_Sega, 5
+	SegaSndTblEntry	Snd_Sega, Snd_Sega_End-Snd_Sega, 10
 
 ; ---------------------------------------------------------------------------
 ; Subroutine that does the exact same thing as PlaneMapToVRAM_H80_SpecialStage

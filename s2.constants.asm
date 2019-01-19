@@ -730,8 +730,8 @@ DACSFXID__End =		id(DACSFXPtr__End)
 
 ; Sound command IDs
 offset :=	zCommandIndex
-ptrsize :=	4
-idstart :=	$F8
+ptrsize :=	2
+idstart :=	$FA
 
 CmdID__First = idstart
 MusID_StopSFX =		id(CmdPtr_StopSFX)	; F8
