@@ -717,17 +717,6 @@ SndID_RingRight = SndID_Ring
 SndID_WingFortress = SndID_Helicopter
 SndID_Scatter = SndID_LaserFloor
 
-; DAC SFX IDs
-offset :=	zDACSFXList
-ptrsize :=	1
-idstart :=	$E0
-idtype :=	"DACSFX"
-
-DACSFXID__First = idstart
-DACSFXID_Sandwich =	id(DACSFXPtr_Sandwich)
-DACSFXID__End =		id(DACSFXPtr__End)
-
-
 ; Sound command IDs
 offset :=	zCommandIndex
 ptrsize :=	2

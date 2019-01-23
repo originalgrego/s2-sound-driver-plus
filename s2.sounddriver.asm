@@ -2269,9 +2269,7 @@ zPlayDACSFX:
 	ld	d,80h		; This is a DAC SFX
 	jp	zPlayDAC
 
-zDACSFXList:
-DACSFXPtr_Sandwich:	db	dSandwich
-DACSFXPtr__End:
+	include "dacsfxlist.gen.asm"
 
 ; ||||||||||||||| S U B	R O U T	I N E |||||||||||||||||||||||||||||||||||||||
 

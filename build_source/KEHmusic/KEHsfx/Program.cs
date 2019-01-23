@@ -10,6 +10,7 @@ namespace KEHsfx
 		static void Main(string[] args)
 		{
 			var sfx = IniSerializer.Deserialize<Dictionary<string, SFXInfo>>("sound/SFX/SFX.ini");
+			var dac = IniSerializer.Deserialize<Dictionary<string, DACInfo>>("sound/SFX/DACSFX.ini");
 			using (StreamWriter sw = new StreamWriter("sfxbank.gen.asm", false, Encoding.ASCII))
 			{
 				sw.WriteLine("SoundIndex:");
@@ -19,6 +20,12 @@ namespace KEHsfx
 				foreach (var item in sfx)
 					sw.WriteLine("Snd_{0}:\tinclude \"sound/SFX/{1}\"", item.Key, item.Value.File);
 				sw.WriteLine();
+			}
+			using (StreamWriter sw = new StreamWriter("dacsfxlist.gen.asm", false, Encoding.ASCII))
+			{
+				sw.WriteLine("zDACSFXList:");
+				foreach (var item in dac)
+					sw.WriteLine("\tdb\t{0}", item.Value.Sample);
 			}
 			using (StreamWriter sw = new StreamWriter("sfxids.gen.asm", false, Encoding.ASCII))
 			{
@@ -37,6 +44,22 @@ namespace KEHsfx
 						last = musids[i] + "+1";
 					}
 				}
+				sw.WriteLine();
+				musids = new List<string>(dac.Keys) { "_End" };
+				sw.WriteLine("DACSFXID__First = SndID__End");
+				last = "_First";
+				for (int i = 0; i < musids.Count; i++)
+				{
+					if (i % 7 == 0)
+						sw.Write("\tenum DACSFXID_{0}=DACSFXID_{1}", musids[i], last);
+					else
+						sw.Write(",DACSFXID_{0}", musids[i]);
+					if (i % 7 == 6)
+					{
+						sw.WriteLine();
+						last = musids[i] + "+1";
+					}
+				}
 			}
 			using (StreamWriter sw = new StreamWriter("sfxnames.gen.asm", false, Encoding.ASCII))
 			{
@@ -46,6 +69,14 @@ namespace KEHsfx
 				sw.WriteLine();
 				foreach (var item in sfx)
 					sw.WriteLine("SndNam_{0}:\tsongtext\t\"{1}\"", item.Key, item.Value.Title.ToUpperInvariant());
+				sw.WriteLine("\teven");
+				sw.WriteLine();
+				sw.WriteLine("DACSFXNames:\toffsetTable");
+				foreach (var item in dac)
+					sw.WriteLine("\toffsetTableEntry.w\tDACSFXNam_{0}", item.Key);
+				sw.WriteLine();
+				foreach (var item in dac)
+					sw.WriteLine("DACSFXNam_{0}:\tsongtext\t\"{1}\"", item.Key, item.Value.Title.ToUpperInvariant());
 				sw.WriteLine("\teven");
 			}
 		}
@@ -63,5 +94,11 @@ namespace KEHsfx
 			get { return Priority.ToString("X2"); }
 			set { Priority = byte.Parse(value, System.Globalization.NumberStyles.HexNumber); }
 		}
+	}
+
+	class DACInfo
+	{
+		public string Title { get; set; }
+		public string Sample { get; set; }
 	}
 }
