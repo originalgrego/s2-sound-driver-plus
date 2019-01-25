@@ -66,15 +66,11 @@ namespace KEHsfx
 				sw.WriteLine("SndNames:\toffsetTable");
 				foreach (var item in sfx)
 					sw.WriteLine("\toffsetTableEntry.w\tSndNam_{0}", item.Key);
-				sw.WriteLine();
-				foreach (var item in sfx)
-					sw.WriteLine("SndNam_{0}:\tsongtext\t\"{1}\"", item.Key, item.Value.Title.ToUpperInvariant());
-				sw.WriteLine("\teven");
-				sw.WriteLine();
-				sw.WriteLine("DACSFXNames:\toffsetTable");
 				foreach (var item in dac)
 					sw.WriteLine("\toffsetTableEntry.w\tDACSFXNam_{0}", item.Key);
 				sw.WriteLine();
+				foreach (var item in sfx)
+					sw.WriteLine("SndNam_{0}:\tsongtext\t\"{1}\"", item.Key, item.Value.Title.ToUpperInvariant());
 				foreach (var item in dac)
 					sw.WriteLine("DACSFXNam_{0}:\tsongtext\t\"{1}\"", item.Key, item.Value.Title.ToUpperInvariant());
 				sw.WriteLine("\teven");

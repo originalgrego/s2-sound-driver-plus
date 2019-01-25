@@ -455,6 +455,7 @@ LevelSelectMenu: ;;
 	jmp	(MenuScreen).l
 ; ===========================================================================
 
+; MM: removed a bunch of stopZ80/startZ80 from here to improve DAC quality
 ; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ; vertical and horizontal interrupt handlers
 ; VERTICAL INTERRUPT HANDLER:
@@ -1225,7 +1226,7 @@ ClearScreen:
 	rts
 ; End of function ClearScreen
 
-
+; MM: these functions now write directly to Z80 RAM
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 ; If Music_to_play is clear, move d0 into Music_to_play,
 ; else move d0 into Music_to_play_2.
@@ -1277,6 +1278,7 @@ PlaySound:
 	rts
 ; End of function PlaySoundLocal
 
+; MM: use these routines to pause/unpause sound
 PauseSoundDriver:
 	move.w	#$2700,sr
 	stopZ80
@@ -3714,6 +3716,7 @@ Sega_WaitPalette:
 	jsr	(BuildSprites).l
 	tst.b	(SegaScr_PalDone_Flag).w
 	beq.s	Sega_WaitPalette
+	; MM: set the default sega sound
 	moveq	#0,d0
 	bsr.s	ChangeSegaSound
 	move.b	#SndID_SegaSound,d0
@@ -3738,6 +3741,7 @@ Sega_GotoTitle:
 	move.b	#GameModeID_TitleScreen,(Game_Mode).w	; => TitleScreen
 	rts
 
+; MM: this routine and the table below control what PCM sample plays on the Sega screen
 ChangeSegaSound:
 	stopZ80
 	move.b	d0, (Z80_RAM+zPCMSound).l
@@ -4359,7 +4363,7 @@ Level_TtlCard:
 +
 	moveq	#PalID_BGND,d0
 	bsr.w	PalLoad_ForFade	; load Sonic's palette line
-	bsr.w	LevelSizeLoad
+	jsr	(LevelSizeLoad).l
 	jsrto	(DeformBgLayer).l, JmpTo_DeformBgLayer
 	clr.w	(Vscroll_Factor_FG).w
 	move.w	#-$E0,(Vscroll_Factor_P2_FG).w
@@ -11511,7 +11515,6 @@ OptionScreen_Controls:
 	andi.w	#button_B_mask|button_C_mask,d0
 	beq.s	+	; rts
 	move.w	(Sound_test_sound).w,d0
-	addi.w	#$80,d0
 	jsrto	(PlayMusic).l, JmpTo_PlayMusic
 	lea	(level_select_cheat).l,a0
 	lea	(continues_cheat).l,a2
@@ -11528,14 +11531,16 @@ OptionScreen_Controls:
 OptionScreen_Choices:
 	dc.l (3-1)<<24|(Player_option&$FFFFFF)
 	dc.l (2-1)<<24|(Two_player_items&$FFFFFF)
-	dc.l ($80-1)<<24|(Sound_test_sound&$FFFFFF)
+	dc.l $FF<<24|(Sound_test_sound&$FFFFFF)
 
 ; ||||||||||||||| S U B R O U T I N E |||||||||||||||||||||||||||||||||||||||
 
 
+; MM: name display in sound test
 ;sub_9186
 OptionScreen_DrawSelected:
 	bsr.w	OptionScreen_SelectTextPtr
+	clearRAM	(Chunk_Table+$B2),(Chunk_Table+$D8)
 	moveq	#0,d1
 	move.b	(Options_menu_box).w,d1
 	lsl.w	#3,d1
@@ -11548,7 +11553,38 @@ OptionScreen_DrawSelected:
 	lea	(Chunk_Table+$B6).l,a2
 	moveq	#0,d1
 	cmpi.b	#2,(Options_menu_box).w
-	beq.s	+
+	bne.s	.notSoundTest
+	addi.w	#2,a2
+	lea	SongNames(pc),a1
+	move.w	(Sound_test_sound).w,d1
+	cmpi.b	#SndID__First,d1
+	blo.s	.gotSoundID
+	cmpi.b	#CmdID__First,d1
+	blo.s	.notCommand
+	subi.b	#CmdID__First,d1
+	lea	SongNames_Special(pc),a1
+	bra.s	.gotSoundID
+
+.notCommand:
+	cmpi.b	#DACSFXID__End,d1
+	bhs.s	.notSFX
+	subi.b	#SndID__First,d1
+	lea	SndNames(pc),a1
+	bra.s	.gotSoundID
+
+.notSFX:
+	moveq	#0,d1
+
+.gotSoundID:
+	add.w	d1,d1
+	move.w	(a1,d1.w),d1
+	add.w	d1,a1
+	bsr.w	MenuScreenTextToRAM
+	lea	(Chunk_Table+$B2).l,a2
+	bsr.w	OptionScreen_HexDumpSoundTest
+	bra.s	++
+
+.notSoundTest:
 	move.b	(Options_menu_box).w,d1
 	lsl.w	#2,d1
 	lea	OptionScreen_Choices(pc),a1
@@ -11558,10 +11594,6 @@ OptionScreen_DrawSelected:
 +
 	movea.l	(a4,d1.w),a1
 	bsr.w	MenuScreenTextToRAM
-	cmpi.b	#2,(Options_menu_box).w
-	bne.s	+
-	lea	(Chunk_Table+$C2).l,a2
-	bsr.w	OptionScreen_HexDumpSoundTest
 +
 	lea	(Chunk_Table).l,a1
 	move.l	(a3)+,d0
@@ -11573,6 +11605,7 @@ OptionScreen_DrawSelected:
 ;loc_91F8
 OptionScreen_DrawUnselected:
 	bsr.w	OptionScreen_SelectTextPtr
+	clearRAM	(Chunk_Table+$212),(Chunk_Table+$238)
 	moveq	#0,d1
 	move.b	(Options_menu_box).w,d1
 	lsl.w	#3,d1
@@ -11585,7 +11618,38 @@ OptionScreen_DrawUnselected:
 	lea	(Chunk_Table+$216).l,a2
 	moveq	#0,d1
 	cmpi.b	#2,(Options_menu_box).w
-	beq.s	+
+	bne.s	.notSoundTest ; MM: name display in sound test
+	addi.w	#2,a2
+	lea	SongNames(pc),a1
+	move.w	(Sound_test_sound).w,d1
+	cmpi.b	#SndID__First,d1
+	blo.s	.gotSoundID
+	cmpi.b	#CmdID__First,d1
+	blo.s	.notCommand
+	subi.b	#CmdID__First,d1
+	lea	SongNames_Special(pc),a1
+	bra.s	.gotSoundID
+
+.notCommand:
+	cmpi.b	#SndID__End,d1
+	bhs.s	.notSFX
+	subi.b	#SndID__First,d1
+	lea	SndNames(pc),a1
+	bra.s	.gotSoundID
+
+.notSFX:
+	moveq	#0,d1
+
+.gotSoundID:
+	add.w	d1,d1
+	move.w	(a1,d1.w),d1
+	add.w	d1,a1
+	bsr.w	MenuScreenTextToRAM
+	lea	(Chunk_Table+$212).l,a2
+	bsr.w	OptionScreen_HexDumpSoundTest
+	bra.s	++
+
+.notSoundTest:
 	move.b	(Options_menu_box).w,d1
 	lsl.w	#2,d1
 	lea	OptionScreen_Choices(pc),a1
@@ -11596,10 +11660,6 @@ OptionScreen_DrawUnselected:
 +
 	movea.l	(a4,d1.w),a1
 	bsr.w	MenuScreenTextToRAM
-	cmpi.b	#2,(Options_menu_box).w
-	bne.s	+
-	lea	(Chunk_Table+$222).l,a2
-	bsr.w	OptionScreen_HexDumpSoundTest
 
 +
 	lea	(Chunk_Table+$160).l,a1
@@ -12206,6 +12266,37 @@ TextOptScr_TeleportOnly:	menutxt	"TELEPORT ONLY  "	; byte_984E:
 TextOptScr_SoundTest:		menutxt	"*  SOUND TEST   *"	; byte_985E:
 TextOptScr_0:			menutxt	"      00       "	; byte_9870:
 
+songtext	macro	text
+	if strlen(text)>16
+overflow = strlen(text) - 16
+	fatal	"Song name exceeds maximum length by $\{overflow} chars!"
+	endif
+	menutxt	text
+	endm
+
+	; MM: titles for sound test
+	even
+
+	include "musicnames.gen.asm"
+
+	include "sfxnames.gen.asm"
+
+SongNames_Special:	offsetTable
+	offsetTableEntry.w	MusNam_StopSFX
+	offsetTableEntry.w	MusNam_FadeOut
+	offsetTableEntry.w	MusNam_SegaSound
+	offsetTableEntry.w	MusNam_SpeedUp
+	offsetTableEntry.w	MusNam_SlowDown
+	offsetTableEntry.w	MusNam_Stop
+
+MusNam_StopSFX:			songtext	"STOP SOUND FX"
+MusNam_FadeOut:			songtext	"FADE OUT MUSIC"
+MusNam_SegaSound:		songtext	"PLAY SEGA SOUND"
+MusNam_SpeedUp:			songtext	"SPEED UP MUSIC"
+MusNam_SlowDown:		songtext	"SLOW DOWN MUSIC"
+MusNam_Stop:			songtext	"STOP ALL SOUND"
+	even
+
 	charset ; reset character set
 
 ; level select picture palettes
@@ -12394,7 +12485,7 @@ EndingSequence:
 EndgameCredits:
 	tst.b	(Credits_Trigger).w
 	beq.w	+++	; rts
-	bsr.w	Pal_FadeToBlack
+	jsr	(Pal_FadeToBlack).w
 	lea	(VDP_control_port).l,a6
 	move.w	#$8004,(a6)		; H-INT disabled
 	move.w	#$8200|(VRAM_EndSeq_Plane_A_Name_Table/$400),(a6)	; PNT A base: $C000
@@ -12443,7 +12534,7 @@ EndgameCredits:
 -
 	jsrto	(ClearScreen).l, JmpTo_ClearScreen
 	bsr.w	ShowCreditsScreen
-	bsr.w	Pal_FadeFromBlack
+	jsr	(Pal_FadeFromBlack).w
 
 	; Here's how to calculate new duration values for the below instructions.
 	; Each slide of the credits is displayed for $18E frames at 60 FPS, or $144 frames at 50 FPS.
@@ -12465,14 +12556,14 @@ EndgameCredits:
 	bsr.w	WaitForVint
 	dbf	d0,-
 
-	bsr.w	Pal_FadeToBlack
+	jsr	(Pal_FadeToBlack).w
 	lea	(off_B2CA).l,a1
 	addq.w	#1,(CreditsScreenIndex).w
 	move.w	(CreditsScreenIndex).w,d0
 	lsl.w	#2,d0
 	move.l	(a1,d0.w),d0
 	bpl.s	--
-	bsr.w	Pal_FadeToBlack
+	jsr	(Pal_FadeToBlack).w
 	jsrto	(ClearScreen).l, JmpTo_ClearScreen
 	move.l	#vdpComm($0000,VRAM,WRITE),(VDP_control_port).l
 	lea	(ArtNem_EndingTitle).l,a0
@@ -88475,6 +88566,7 @@ Objects_Null:
 	; And another
 	ObjectLayoutBoundary
 
+; MM: these used to be in the middle of the sound data
 ; --------------------------------------------------------------------
 ; Nemesis compressed art (20 blocks)
 ; HTZ boss lava ball / Sol fireball
@@ -88609,7 +88701,7 @@ ArtNem_MCZGateLog:	BINCLUDE	"art/nemesis/Drawbridge logs from MCZ.bin"
 
 
 	even
-
+; MM: sound driver stuff
 ; ---------------------------------------------------------------------------
 ; Subroutine to load the sound driver
 ; ---------------------------------------------------------------------------
