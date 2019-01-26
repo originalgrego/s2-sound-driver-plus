@@ -31837,11 +31837,18 @@ Obj0D_Main:
 	lea	(MainCharacter).w,a1 ; a1=character
 	move.w	x_pos(a1),d0
 	sub.w	x_pos(a0),d0
-	bcs.s	loc_192D6
+	bcs.w	loc_192D6
 	cmpi.w	#$20,d0
-	bhs.s	loc_192D6
+	bhs.w	loc_192D6
 	move.w	#SndID_Signpost,d0
 	jsr	(PlayMusic).l	; play spinning sound
+; MM: play voice sample on act clear
+	move.w	#DACSFXID_SonicGoal,d0
+	cmpi.w	#2,(Player_mode).w
+	bne.s	+
+	move.w	#DACSFXID_TailsGoal,d0
++
+	jsr	(PlaySound).w
 	clr.b	(Update_HUD_timer).w
 	move.w	#1,anim(a0)
 	move.w	#0,obj0D_spinframe(a0)
@@ -31866,7 +31873,7 @@ loc_192BC:
 	move.w	#$3C3C,(Loser_Time_Left).w
 	move.w	#SndID_Signpost2P,d0	; play different spinning sound
 	jsr	(PlaySound).l
-	bra.s	loc_19350
+	bra.w	loc_19350
 ; ---------------------------------------------------------------------------
 
 loc_192D6:
@@ -31882,6 +31889,9 @@ loc_192D6:
 	bhs.s	loc_19350
 	move.w	#SndID_Signpost,d0
 	jsr	(PlayMusic).l
+; MM: play voice sample on act clear
+	move.w	#DACSFXID_TailsGoal,d0
+	jsr	(PlaySound).w
 	clr.b	(Update_HUD_timer_2P).w
 	move.w	#1,anim(a0)
 	move.w	#0,obj0D_spinframe(a0)
@@ -38840,8 +38850,13 @@ Obj0A_ReduceAir:
 	subq.b	#1,air_left(a2)		; subtract 1 from air remaining
 	bcc.w	BranchTo_Obj0A_MakeItem	; if air is above 0, branch
 	move.b	#$81,obj_control(a2)	; lock controls
-	move.w	#SndID_Drown,d0
-	jsr	(PlaySound).l		; play drowning sound
+; MM: use voice samples for drowning
+	move.w	#DACSFXID_SonicDrown,d0
+	cmpi.w	#2,(Player_mode).w
+	bne.s	+
+	move.w	#DACSFXID_TailsDrown,d0
++
+	jsr	(PlaySound).w		; play drowning sound
 	move.b	#$A,objoff_34(a0)
 	move.w	#1,objoff_36(a0)
 	move.w	#$78,objoff_2C(a0)
@@ -68957,6 +68972,13 @@ loc_3610C:
 	move.b	#8,routine(a0)
 	move.w	#MusID_Emerald,d0
 	jsr	(PlayMusic).l
+; MM: play voice sample on Emerald get
+	move.w	#DACSFXID_SonicGoal,d0
+	cmpi.w	#2,(Player_mode).w
+	bne.s	+
+	move.w	#DACSFXID_TailsGoal,d0
++
+	jmp	(PlaySound).w
 
 return_36140:
 	rts
@@ -81412,6 +81434,13 @@ loc_3F2B4:
 	move.w	x_pos(a2),x_pos(a1)
 	move.w	y_pos(a2),y_pos(a1)
 +
+; MM: play voice sample on act clear
+	move.w	#DACSFXID_SonicGoal,d0
+	cmpi.w	#2,(Player_mode).w
+	bne.s	+
+	move.w	#DACSFXID_TailsGoal,d0
++
+	jsr	(PlaySound).w
 	move.w	#-$400,y_vel(a2)
 	move.w	#$800,x_vel(a2)
 	addq.b	#2,routine_secondary(a2)
@@ -82023,12 +82052,13 @@ KillCharacter:
 	move.w	#0,inertia(a0)
 	move.b	#AniIDSonAni_Death,anim(a0)
 	bset	#high_priority_bit,art_tile(a0)
-	move.w	#SndID_Hurt,d0
-	cmpi.b	#ObjID_Spikes,id(a2)
+; MM: use voice sample when dying
+	move.w	#DACSFXID_SonicDead,d0
+	cmpi.w	#2,(Player_mode).w
 	bne.s	+
-	move.w	#SndID_HurtBySpikes,d0
+	move.w	#DACSFXID_TailsDead,d0
 +
-	jsr	(PlaySound).l
+	jsr	(PlaySound).w
 +
 	moveq	#-1,d0
 	rts
