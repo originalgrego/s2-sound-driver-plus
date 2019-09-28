@@ -1,10 +1,11 @@
-#include <string.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 #include <unistd.h> // for unlink
-#include <fstream>
-#include "FW_KENSC/kosinski.h"
 
-using namespace std;
+#include "clownlzss/kosinski.h"
 
 const char* codeFileName = NULL;
 const char* romFileName = NULL;
@@ -126,13 +127,13 @@ bool buildRom(FILE* from, FILE* to)
 
 		if(start < 0)
 		{
-			printf("\nERROR: negative start address ($%X).", start), start = 0;
+			printf("\nERROR: negative start address ($%lX).", start), start = 0;
 			return false;
 		}
 
 		if(cpuType == 0x51 && start != 0 && lastSegmentCompressed)
 		{
-			printf("\nERROR: The compressed Z80 code must all be in one segment. That means no ORG/ALIGN/CNOP/EVEN or memory reservation commands in the Z80 code and the size must be < 65535 bytes. The offending new segment starts at address $%X relative to the start of the Z80 code.", start);
+			printf("\nERROR: The compressed Z80 code (s2.sounddriver.asm) must all be in one segment. That means no ORG/ALIGN/CNOP/EVEN or memory reservation commands in the Z80 code and the size must be < 65535 bytes. The offending new segment starts at address $%lX relative to the start of the Z80 code.", start);
 			return false;
 		}
 
@@ -141,12 +142,15 @@ bool buildRom(FILE* from, FILE* to)
 			// Kosinski-compressed Z80 segment
 			start = lastStart + lastLength;
 			int srcStart = ftell(from);
-			int dstStart = ftell(to);
-			ifstream fin(codeFileName, ios::in|ios::binary);
-			fstream fout(romFileName, ios::in|ios::out|ios::binary);
-			compressedLength = kosinski::encode(fin, fout, srcStart, length, dstStart);
-			fseek(from, length, SEEK_CUR);
-			fseek(to, compressedLength, SEEK_CUR);
+
+			unsigned char *uncompressed_buffer = malloc(length);
+			fread(uncompressed_buffer, length, 1, from);
+			unsigned char *compressed_buffer = ClownLZSS_KosinskiCompress(uncompressed_buffer, length, &compressedLength);
+			free(uncompressed_buffer);
+			fwrite(compressed_buffer, compressedLength, 1, to);
+			free(compressed_buffer);
+
+			fseek(from, srcStart + length, SEEK_SET);
 			lastSegmentCompressed = true;
 			continue;
 		}
@@ -154,13 +158,18 @@ bool buildRom(FILE* from, FILE* to)
 		if(!lastSegmentCompressed)
 		{
 			if(start+3 < ftell(to)) // 3 bytes of leeway for instruction patching
-				printf("\nWarning: overlapping allocation detected! $%X < $%X", start, ftell(to));
+				printf("\nWarning: overlapping allocation detected! $%lX < $%lX", start, ftell(to));
 		}
 		else
 		{
 			if(start < ftell(to))
 			{
-				printf("\nERROR: Compressed sound driver might not fit.\nPlease increase your value of Size_of_Snd_driver_guess to at least $%X and try again.", compressedLength);
+				#ifdef __MINGW32__
+				#define PRINTF __mingw_printf
+				#else
+				#define PRINTF printf
+				#endif
+				PRINTF("\nERROR: Compressed sound driver might not fit.\nPlease increase your value of Size_of_Snd_driver_guess to at least $%zX and try again.", compressedLength);
 				return false;
 			}
 			else

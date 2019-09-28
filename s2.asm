@@ -43876,6 +43876,8 @@ Obj06_Spiral_MoveCharacter:
 	rts
 
 ; ===========================================================================
+; Fun fact - Sega had a patent which included the original source code
+; for these tables: https://patents.google.com/patent/US5411272
 ; byte_21634:
 ; sloopdirtbl:
 Obj06_FlipAngleTable:
@@ -88374,6 +88376,7 @@ MiscKoz_SpecialPerspective:	BINCLUDE	"misc/Special stage object perspective data
 ;--------------------------------------------------------------------------------------
 ; Special stage level layout (Nemesis compression)	; MiscNem_E34EE:
 ;--------------------------------------------------------------------------------------
+	even
 MiscKoz_SpecialLevelLayout:	BINCLUDE	"misc/Special stage level layouts (Nemesis compression).bin"
 ;--------------------------------------------------------------------------------------
 ; Special stage object location list (Kosinski compression)	; MiscKoz_E35F2:
