@@ -1,23 +1,17 @@
-#include <sstream>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h> // for unlink
+#include <fstream>
+#include "FW_KENSC/kosinski.h"
 
-#include "KensSaxComp/S-Compressor.h"
-#include "FW_KENSC/saxman.h"
-
-using std::stringstream;
-using std::ios;
+using namespace std;
 
 const char* codeFileName = NULL;
 const char* romFileName = NULL;
-const char* shareFileName = NULL;
 size_t compressedLength = 0;
-bool accurate_compression;
 
-void printUsage() { printf("usage: s2p2bin [-a | --accurate] inputcodefile.p outputromfile.bin sharefile.h\n\n  -a, --accurate    use weaker sound driver compression that's accurate to\n                    the original ROM"); }
+void printUsage() { printf("usage: s2p2bin_plus inputcodefile.p outputromfile.bin\n"); }
 bool buildRom(FILE* from, FILE* to);
-void editShareFile();
 
 int main(int argc, char *argv[])
 {
@@ -37,19 +31,15 @@ int main(int argc, char *argv[])
 		
 		if(!strcasecmp(arg, "-h") || !strcasecmp(arg, "--help"))
 			printUsage(), argc = 0;
-		else if (!strcasecmp(arg, "-a") || !strcasecmp(arg, "--accurate"))
-			accurate_compression = true;
 		else if(!codeFileName)
 			codeFileName = arg;
 		else if(!romFileName)
 			romFileName = arg;
-		else if(!shareFileName)
-			shareFileName = arg;
 	}
 
 	if(codeFileName && romFileName)
 	{
-		printf("\ns2p2bin: generating %s from %s", romFileName, codeFileName);
+		printf("\ns2p2bin_plus: generating %s from %s...", romFileName, codeFileName);
 		
 		FILE* from = fopen(codeFileName, "rb");
 		if(from)
@@ -62,8 +52,7 @@ int main(int argc, char *argv[])
 				fclose(from);
 				if(built)
 				{
-					editShareFile();
-					printf(" ... done.");
+					printf("\n...done");
 				}
 				else
 				{
@@ -80,20 +69,6 @@ int main(int argc, char *argv[])
 	printf("\n");
 //	system("PAUSE");
 	return 0;
-}
-
-void editShareFile()
-{
-	if(shareFileName && compressedLength > 0)
-	{
-		FILE* share = fopen(shareFileName, "rb+");
-		if(share)
-		{
-			fseek(share, 0, SEEK_SET);
-			fprintf(share, "comp_z80_size 0x%X ", compressedLength);
-			fclose(share);
-		}
-	}
 }
 
 bool buildRom(FILE* from, FILE* to)
@@ -157,35 +132,21 @@ bool buildRom(FILE* from, FILE* to)
 
 		if(cpuType == 0x51 && start != 0 && lastSegmentCompressed)
 		{
-			printf("\nERROR: The compressed Z80 code (s2.sounddriver.asm) must all be in one segment. That means no ORG/ALIGN/CNOP/EVEN or memory reservation commands in the Z80 code and the size must be < 65535 bytes. The offending new segment starts at address $%X relative to the start of the Z80 code.", start);
+			printf("\nERROR: The compressed Z80 code must all be in one segment. That means no ORG/ALIGN/CNOP/EVEN or memory reservation commands in the Z80 code and the size must be < 65535 bytes. The offending new segment starts at address $%X relative to the start of the Z80 code.", start);
 			return false;
 		}
 
 		if(cpuType == 0x51 && start == 0) // 0x51 is the type for Z80 family (0x01 is for 68000)
 		{
-			// Saxman compressed Z80 segment
+			// Kosinski-compressed Z80 segment
 			start = lastStart + lastLength;
 			int srcStart = ftell(from);
-
-			if (accurate_compression)
-			{
-				compressedLength = SComp3(from, srcStart, length, to, start, false);
-			}
-			else
-			{
-				char *buf = new char[length];
-				fread(buf, length, 1, from);
-				stringstream outbuff(ios::in | ios::out | ios::binary);
-				saxman::encode(buf, length, outbuff, false, &compressedLength);
-				delete[] buf;
-				buf = new char[compressedLength];
-				outbuff.seekg(0);
-				outbuff.read(buf, compressedLength);
-				fwrite(buf, sizeof(char), compressedLength, to);
-				delete[] buf;
-			}
-
-			fseek(from, srcStart + length, SEEK_SET);
+			int dstStart = ftell(to);
+			ifstream fin(codeFileName, ios::in|ios::binary);
+			fstream fout(romFileName, ios::in|ios::out|ios::binary);
+			compressedLength = kosinski::encode(fin, fout, srcStart, length, dstStart);
+			fseek(from, length, SEEK_CUR);
+			fseek(to, compressedLength, SEEK_CUR);
 			lastSegmentCompressed = true;
 			continue;
 		}
@@ -202,6 +163,8 @@ bool buildRom(FILE* from, FILE* to)
 				printf("\nERROR: Compressed sound driver might not fit.\nPlease increase your value of Size_of_Snd_driver_guess to at least $%X and try again.", compressedLength);
 				return false;
 			}
+			else
+				printf("\nCompressed driver size: 0x%X", compressedLength);
 		}
 
 		lastStart = start;
