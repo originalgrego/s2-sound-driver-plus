@@ -4137,53 +4137,53 @@ JmpTo_SwScrl_Title
 
 
 
-
+; MM: giving each act separate music
 ;----------------------------------------------------------------------------
 ; 1P Music Playlist
 ;----------------------------------------------------------------------------
 ; byte_3EA0:
-MusicList: zoneOrderedTable 1,1
-	zoneTableEntry.b MusID_EHZ	; 0 ; EHZ
-	zoneTableEntry.b MusID_EHZ	; 1
-	zoneTableEntry.b MusID_MTZ	; 2
-	zoneTableEntry.b MusID_OOZ	; 3
-	zoneTableEntry.b MusID_MTZ	; 4 ; MTZ1,2
-	zoneTableEntry.b MusID_MTZ	; 5 ; MTZ3
-	zoneTableEntry.b MusID_WFZ	; 6 ; WFZ
-	zoneTableEntry.b MusID_HTZ	; 7 ; HTZ
-	zoneTableEntry.b MusID_HPZ	; 8
-	zoneTableEntry.b MusID_SCZ	; 9
-	zoneTableEntry.b MusID_OOZ	; 10 ; OOZ
-	zoneTableEntry.b MusID_MCZ	; 11 ; MCZ
-	zoneTableEntry.b MusID_CNZ	; 12 ; CNZ
-	zoneTableEntry.b MusID_CPZ	; 13 ; CPZ
-	zoneTableEntry.b MusID_DEZ	; 14 ; DEZ
-	zoneTableEntry.b MusID_ARZ	; 15 ; ARZ
-	zoneTableEntry.b MusID_SCZ	; 16 ; SCZ
+MusicList: zoneOrderedTable 1,2
+	zoneTableEntry.b MusID_EHZ, MusID_EHZ	; 0 ; EHZ
+	zoneTableEntry.b MusID_EHZ, MusID_EHZ	; 1
+	zoneTableEntry.b MusID_MTZ, MusID_EHZ	; 2
+	zoneTableEntry.b MusID_OOZ, MusID_EHZ	; 3
+	zoneTableEntry.b MusID_MTZ, MusID_MTZ	; 4 ; MTZ1,2
+	zoneTableEntry.b MusID_MTZ, MusID_EHZ	; 5 ; MTZ3
+	zoneTableEntry.b MusID_WFZ, MusID_EHZ	; 6 ; WFZ
+	zoneTableEntry.b MusID_HTZ, MusID_HTZ	; 7 ; HTZ
+	zoneTableEntry.b MusID_HPZ, MusID_HPZ	; 8
+	zoneTableEntry.b MusID_SCZ, MusID_EHZ	; 9
+	zoneTableEntry.b MusID_OOZ, MusID_OOZ	; 10 ; OOZ
+	zoneTableEntry.b MusID_MCZ, MusID_MCZ	; 11 ; MCZ
+	zoneTableEntry.b MusID_CNZ, MusID_CNZ	; 12 ; CNZ
+	zoneTableEntry.b MusID_CPZ, MusID_CPZ	; 13 ; CPZ
+	zoneTableEntry.b MusID_DEZ, MusID_DEZ	; 14 ; DEZ
+	zoneTableEntry.b MusID_ARZ, MusID_ARZ	; 15 ; ARZ
+	zoneTableEntry.b MusID_SCZ, MusID_EHZ	; 16 ; SCZ
     zoneTableEnd
 	even
 ;----------------------------------------------------------------------------
 ; 2P Music Playlist
 ;----------------------------------------------------------------------------
 ; byte_3EB2:
-MusicList2: zoneOrderedTable 1,1
-	zoneTableEntry.b MusID_EHZ_2P	; 0  ; EHZ 2P
-	zoneTableEntry.b MusID_EHZ	; 1
-	zoneTableEntry.b MusID_MTZ	; 2
-	zoneTableEntry.b MusID_OOZ	; 3
-	zoneTableEntry.b MusID_MTZ	; 4
-	zoneTableEntry.b MusID_MTZ	; 5
-	zoneTableEntry.b MusID_WFZ	; 6
-	zoneTableEntry.b MusID_HTZ	; 7
-	zoneTableEntry.b MusID_HPZ	; 8
-	zoneTableEntry.b MusID_SCZ	; 9
-	zoneTableEntry.b MusID_OOZ	; 10
-	zoneTableEntry.b MusID_MCZ_2P	; 11 ; MCZ 2P
-	zoneTableEntry.b MusID_CNZ_2P	; 12 ; CNZ 2P
-	zoneTableEntry.b MusID_CPZ	; 13
-	zoneTableEntry.b MusID_DEZ	; 14
-	zoneTableEntry.b MusID_ARZ	; 15
-	zoneTableEntry.b MusID_SCZ	; 16
+MusicList2: zoneOrderedTable 1,2
+	zoneTableEntry.b MusID_EHZ_2P, MusID_EHZ_2P	; 0  ; EHZ 2P
+	zoneTableEntry.b MusID_EHZ, MusID_EHZ	; 1
+	zoneTableEntry.b MusID_MTZ, MusID_EHZ	; 2
+	zoneTableEntry.b MusID_OOZ, MusID_EHZ	; 3
+	zoneTableEntry.b MusID_MTZ, MusID_EHZ	; 4
+	zoneTableEntry.b MusID_MTZ, MusID_EHZ	; 5
+	zoneTableEntry.b MusID_WFZ, MusID_EHZ	; 6
+	zoneTableEntry.b MusID_HTZ, MusID_EHZ	; 7
+	zoneTableEntry.b MusID_HPZ, MusID_EHZ	; 8
+	zoneTableEntry.b MusID_SCZ, MusID_EHZ	; 9
+	zoneTableEntry.b MusID_OOZ, MusID_EHZ	; 10
+	zoneTableEntry.b MusID_MCZ_2P, MusID_MCZ_2P	; 11 ; MCZ 2P
+	zoneTableEntry.b MusID_CNZ_2P, MusID_CNZ_2P	; 12 ; CNZ 2P
+	zoneTableEntry.b MusID_CPZ, MusID_EHZ	; 13
+	zoneTableEntry.b MusID_DEZ, MusID_EHZ	; 14
+	zoneTableEntry.b MusID_ARZ, MusID_EHZ	; 15
+	zoneTableEntry.b MusID_SCZ, MusID_EHZ	; 16
     zoneTableEnd
 	even
 ; ===========================================================================
@@ -4334,7 +4334,9 @@ Level_GetBgm:
 	tst.w	(Demo_mode_flag).w
 	bmi.s	+
 	moveq	#0,d0
-	move.b	(Current_Zone).w,d0
+	move.w	(Current_ZoneAndAct).w,d0
+	ror.b	#1,d0
+	lsr.w	#7,d0
 	lea_	MusicList,a1
 	tst.w	(Two_player_mode).w
 	beq.s	Level_PlayBgm
