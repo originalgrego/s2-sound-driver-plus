@@ -82046,7 +82046,7 @@ Hurt_Sound:
 ; loc_3F926: KillSonic:
 KillCharacter:
 	tst.w	(Debug_placement_mode).w
-	bne.s	++
+	bne.s	+++
 	clr.b	status_secondary(a0)
 	move.b	#6,routine(a0)
 	jsrto	(Sonic_ResetOnFloor_Part2).l, JmpTo_Sonic_ResetOnFloor_Part2
@@ -82059,7 +82059,10 @@ KillCharacter:
 ; MM: use voice sample when dying
 	move.w	#DACSFXID_SonicDead,d0
 	cmpi.w	#2,(Player_mode).w
-	bne.s	+
+	beq.s	+
+	cmpi.w	#MainCharacter,a0
+	bne.s	++
++
 	move.w	#DACSFXID_TailsDead,d0
 +
 	jsr	(PlaySound).w
