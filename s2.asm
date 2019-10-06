@@ -81429,7 +81429,7 @@ off_3F2AE:	offsetTable
 loc_3F2B4:
 	movea.w	objoff_38(a0),a1 ; a1=object
 	tst.w	objoff_32(a1)
-	beq.s	++	; rts
+	beq.s	+++	; rts
 	movea.w	objoff_3A(a0),a2 ; a2=object
 	jsr	(SingleObjLoad).l
 	bne.s	+
