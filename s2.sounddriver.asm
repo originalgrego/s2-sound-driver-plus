@@ -2916,7 +2916,7 @@ cfFadeInToPrevious:
 
 cfFadeInToPrevious_FlagLoadInstruction:
 	ld	a,0FFh
-	bit	6,a		; Check the 'music is uncompressed' flag (remember, 'a' was shifted before it was stored)
+	bit	5,a		; Check the 'music is uncompressed' flag (remember, 'a' was shifted before it was stored)
 	jr	nz,+		; If it's set, there's nothing to decompress
 
 cfFadeInToPrevious_AddressLoadInstruction:
