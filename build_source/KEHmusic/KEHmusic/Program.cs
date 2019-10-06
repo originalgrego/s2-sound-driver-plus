@@ -154,7 +154,7 @@ namespace KEHmusic
 								File.Delete("tmp.log");
 							}
 							if (!File.Exists("tmp.p")) continue;
-							si = new ProcessStartInfo("win32/s2p2bin_plus", "tmp.p tmp.bin")
+							si = new ProcessStartInfo("win32/s2p2bin", "tmp.p tmp.bin")
 							{
 								CreateNoWindow = true,
 								UseShellExecute = false
