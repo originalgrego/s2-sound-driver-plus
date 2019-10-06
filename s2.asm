@@ -82064,7 +82064,7 @@ KillCharacter:
 	cmpi.w	#2,(Player_mode).w
 	beq.s	+
 	cmpi.w	#MainCharacter,a0
-	bne.s	++
+	beq.s	++
 +
 	move.w	#DACSFXID_TailsDead,d0
 +
