@@ -38855,7 +38855,10 @@ Obj0A_ReduceAir:
 ; MM: use voice samples for drowning
 	move.w	#DACSFXID_SonicDrown,d0
 	cmpi.w	#2,(Player_mode).w
-	bne.s	+
+	beq.s	+
+	cmpi.w	#MainCharacter,a2
+	beq.s	++
++
 	move.w	#DACSFXID_TailsDrown,d0
 +
 	jsr	(PlaySound).w		; play drowning sound
