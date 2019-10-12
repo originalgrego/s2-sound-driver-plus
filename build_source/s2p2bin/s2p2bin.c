@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <unistd.h> // for unlink
 
 #include "clownlzss/kosinski.h"
 
@@ -11,7 +9,7 @@ const char* codeFileName = NULL;
 const char* romFileName = NULL;
 size_t compressedLength = 0;
 
-void printUsage() { printf("usage: s2p2bin_plus inputcodefile.p outputromfile.bin\n"); }
+void printUsage() { printf("usage: s2p2bin inputcodefile.p outputromfile.bin\n"); }
 bool buildRom(FILE* from, FILE* to);
 
 int main(int argc, char *argv[])
@@ -30,7 +28,7 @@ int main(int argc, char *argv[])
 		char* arg = argv[0];
 		argc--, argv++; // pop arg
 		
-		if(!strcasecmp(arg, "-h") || !strcasecmp(arg, "--help"))
+		if(!strcmp(arg, "-h") || !strcmp(arg, "--help"))
 			printUsage(), argc = 0;
 		else if(!codeFileName)
 			codeFileName = arg;
@@ -40,7 +38,7 @@ int main(int argc, char *argv[])
 
 	if(codeFileName && romFileName)
 	{
-		printf("\ns2p2bin_plus: generating %s from %s...", romFileName, codeFileName);
+		printf("\ns2p2bin: generating %s from %s", romFileName, codeFileName);
 		
 		FILE* from = fopen(codeFileName, "rb");
 		if(from)
@@ -57,7 +55,7 @@ int main(int argc, char *argv[])
 				}
 				else
 				{
-					unlink(romFileName); // error; delete the rom because it's probably hosed
+					remove(romFileName); // error; delete the rom because it's probably hosed
 				}
 			}
 			else
