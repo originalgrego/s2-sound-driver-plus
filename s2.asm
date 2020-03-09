@@ -31836,12 +31836,6 @@ Obj0D_Main:
 	move.w	#SndID_Signpost,d0
 	jsr	(PlayMusic).l	; play spinning sound
 ; MM: play voice sample on act clear
-	move.w	#DACSFXID_SonicGoal,d0
-	cmpi.w	#2,(Player_mode).w
-	bne.s	+
-	move.w	#DACSFXID_TailsGoal,d0
-+
-	jsr	(PlaySound).w
 	clr.b	(Update_HUD_timer).w
 	move.w	#1,anim(a0)
 	move.w	#0,obj0D_spinframe(a0)
@@ -31882,9 +31876,7 @@ loc_192D6:
 	bhs.s	loc_19350
 	move.w	#SndID_Signpost,d0
 	jsr	(PlayMusic).l
-; MM: play voice sample on act clear
-	move.w	#DACSFXID_TailsGoal,d0
-	jsr	(PlaySound).w
+
 	clr.b	(Update_HUD_timer_2P).w
 	move.w	#1,anim(a0)
 	move.w	#0,obj0D_spinframe(a0)
@@ -38843,16 +38835,8 @@ Obj0A_ReduceAir:
 	subq.b	#1,air_left(a2)		; subtract 1 from air remaining
 	bcc.w	BranchTo_Obj0A_MakeItem	; if air is above 0, branch
 	move.b	#$81,obj_control(a2)	; lock controls
-; MM: use voice samples for drowning
-	move.w	#DACSFXID_SonicDrown,d0
-	cmpi.w	#2,(Player_mode).w
-	beq.s	+
-	cmpi.w	#MainCharacter,a2
-	beq.s	++
-+
-	move.w	#DACSFXID_TailsDrown,d0
-+
-	jsr	(PlaySound).w		; play drowning sound
+	move.w	#SndID_Drown,d0
+	jsr	(PlaySound).l		; play drowning sound
 	move.b	#$A,objoff_34(a0)
 	move.w	#1,objoff_36(a0)
 	move.w	#$78,objoff_2C(a0)
@@ -68970,13 +68954,6 @@ loc_3610C:
 	move.b	#8,routine(a0)
 	move.w	#MusID_Emerald,d0
 	jsr	(PlayMusic).l
-; MM: play voice sample on Emerald get
-	move.w	#DACSFXID_SonicGoal,d0
-	cmpi.w	#2,(Player_mode).w
-	bne.s	+
-	move.w	#DACSFXID_TailsGoal,d0
-+
-	jmp	(PlaySound).w
 
 return_36140:
 	rts
@@ -81423,7 +81400,7 @@ off_3F2AE:	offsetTable
 loc_3F2B4:
 	movea.w	objoff_38(a0),a1 ; a1=object
 	tst.w	objoff_32(a1)
-	beq.s	+++	; rts
+	beq.s	++	; rts
 	movea.w	objoff_3A(a0),a2 ; a2=object
 	jsr	(SingleObjLoad).l
 	bne.s	+
@@ -81432,13 +81409,6 @@ loc_3F2B4:
 	move.w	x_pos(a2),x_pos(a1)
 	move.w	y_pos(a2),y_pos(a1)
 +
-; MM: play voice sample on act clear
-	move.w	#DACSFXID_SonicGoal,d0
-	cmpi.w	#2,(Player_mode).w
-	bne.s	+
-	move.w	#DACSFXID_TailsGoal,d0
-+
-	jsr	(PlaySound).w
 	move.w	#-$400,y_vel(a2)
 	move.w	#$800,x_vel(a2)
 	addq.b	#2,routine_secondary(a2)
@@ -82040,7 +82010,7 @@ Hurt_Sound:
 ; loc_3F926: KillSonic:
 KillCharacter:
 	tst.w	(Debug_placement_mode).w
-	bne.s	+++
+	bne.s	++
 	clr.b	status_secondary(a0)
 	move.b	#6,routine(a0)
 	jsrto	(Sonic_ResetOnFloor_Part2).l, JmpTo_Sonic_ResetOnFloor_Part2
@@ -82050,16 +82020,12 @@ KillCharacter:
 	move.w	#0,inertia(a0)
 	move.b	#AniIDSonAni_Death,anim(a0)
 	bset	#high_priority_bit,art_tile(a0)
-; MM: use voice sample when dying
-	move.w	#DACSFXID_SonicDead,d0
-	cmpi.w	#2,(Player_mode).w
-	beq.s	+
-	cmpi.w	#MainCharacter,a0
-	beq.s	++
+	move.w	#SndID_Hurt,d0
+	cmpi.b	#ObjID_Spikes,id(a2)
+	bne.s	+
+	move.w	#SndID_HurtBySpikes,d0
 +
-	move.w	#DACSFXID_TailsDead,d0
-+
-	jsr	(PlaySound).w
+	jsr	(PlaySound).l
 +
 	moveq	#-1,d0
 	rts
